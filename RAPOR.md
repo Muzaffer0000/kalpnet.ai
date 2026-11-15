@@ -1,4 +1,15 @@
-# kalpnet.ai: Proje Raporu (Faz 0-2)
+# kalpnet.ai: Proje Raporu (Faz 0-4)
+
+**Canlı uygulama:** https://muzaffer0000.github.io/kalpnet.ai/app/
+
+| Faz | Durum |
+|---|---|
+| 0. Hazırlık | Bitti |
+| 1. Veri | Kısmen: Cleveland ve sentetik var, MIMIC-IV başvurusu yapılmadı |
+| 2. Model | Bitti |
+| 3. Kendini geliştirme döngüsü | Bitti |
+| 4. Mobil uygulama (PWA) | Bitti, yayında |
+| 5. Güvenlik ve hukuk | Başlanmadı |
 
 ## 1. Amaç ve neden
 
@@ -58,19 +69,79 @@ Göğüs ağrısıyla acile gelenlerin çoğunda kalp kaynaklı bir sorun çıkm
 
 İlk sentetik veride kas ağrısına 4 saat medyan süre verilmişti. Model bunu öğrenip ağrı uzadıkça kalp krizi ihtimalini düşürdü. Gerçekte uzun ağrı kalp krizini dışlamaz. Süre dağılımları çakışacak biçimde genişletildi (kardiyak 22-93 dk çeyrekler, kas 37-188, reflü 30-108, panik 8-26) ve model yeniden eğitildi; bu kural kayboldu. Sentetik veriyle çalışmanın riskinin somut bir örneği.
 
-## 7. Sıradaki adımlar
+## 7. Faz 3: Kendini geliştirme döngüsü
 
-1. Olasılık tablosunu bir doktora gösterip düzelttirmek.
+**Ne:** Yeni vakalar gelince model kendini yeniden eğitir, eskisiyle karşılaştırır ve sadece daha iyiyse devreye girer.
+
+**Nasıl** (`src/retrain.py`, ortak kod `src/model_lib.py`):
+1. Yeni vaka dosyası doğrulanır (sütunlar, 0/1 değerler, yaş 18-90, süre ≥ 1). Tek bir hatalı satır bile tüm dosyayı reddettirir.
+2. Eğitim havuzu + yeni vakalarla aday model eğitilir.
+3. Eski ve aday model, **hiç eğitimde kullanılmayan dondurulmuş test setinde** (`data/test_frozen.csv`, 1500 vaka) karşılaştırılır.
+4. **Terfi kuralı:** aday daha fazla kalp krizi kaçırmıyorsa, %98 duyarlılığı koruyorsa ve ya daha az kaçırıyor ya da daha az yanlış alarm veriyorsa devreye girer. Aksi hâlde reddedilir.
+5. Eski model sürüm numarasıyla saklanır, her deneme `models/registry.json` kayıt defterine yazılır.
+
+**Neden böyle:** Telefonda canlı, kontrolsüz öğrenme tıpta tehlikelidir; tek bir kötü veri modeli bozabilir. Her güncelleme bir kapıdan geçer.
+
+**Demo sonucu:**
+
+| Model | Duyarlılık | Özgüllük | Kaçırılan (1500) |
+|---|---|---|---|
+| v1 (aktif) | %99,1 | %83,7 | 2 |
+| v2 (+1000 yeni vaka) | %97,9 | %84,8 | 5 |
+
+v2 daha az yanlış alarm veriyordu ama 3 kalp krizini daha kaçırdığı için **reddedildi**; v1 aktif kaldı. Döngü kötü bir güncellemeyi engelledi.
+
+**Güvenlik önlemi:** `train_symptoms.py` kayıt defteri varken çalışmayı reddeder (`--reset` gerekir), model geçmişi yanlışlıkla silinmez.
+
+**Testler:** `tests/test_retrain.py`, 7 test (hatalı dosya reddi, terfi kuralının tüm durumları, uçtan uca çalışma). Hepsi geçiyor.
+
+## 8. Faz 4: Mobil uygulama
+
+**Ne:** Telefonda tarayıcıdan açılan, ana ekrana eklenebilen ve internetsiz çalışan bir uygulama (PWA). Adres: https://muzaffer0000.github.io/kalpnet.ai/app/
+
+**Nasıl:**
+- Model lojistik regresyon, yani basit bir formül. `src/export_model.py` katsayıları `app/model.json`'a aktarır; telefon skoru birkaç satır JavaScript'le (`app/score.js`) hesaplar. TFLite/ONNX'e gerek kalmadı.
+- **Parite testi** (`tests/test_app_parity.mjs`): telefondaki hesap, Python modeliyle 200 vakada karşılaştırıldı. En büyük fark 2×10⁻¹⁶, alarm kararlarının hepsi aynı.
+- Arayüz Türkçe, telefona uygun. Hiçbir veri cihazdan çıkmaz, analitik yok.
+
+**Güvenlik kuralları:**
+- Formdan **önce** acil belirtiler listesi ve 112 butonu.
+- Yüksek skor: "Acil kalp kaynaklı olabilir, hemen 112'yi arayın."
+- Düşük skor: "Risk daha düşük görünüyor ama bu araç kalp krizini dışlayamaz" ve panik için nefes egzersizi. Hiçbir koşulda "güvendesiniz" demez.
+- Tüm sorular **zorunlu**. İlk sürümde cevapsız sorular "Hayır" sayılıyordu; bu, örneğin "kola yayılıyor mu" atlanınca riski düşük gösterirdi. İncelemede yakalanıp düzeltildi. Ağrı türü de otomatik seçili gelmiyor.
+- Ekranın altında sürekli uyarı: tıbbi cihaz değildir, tanı koymaz, sentetik veriyle eğitilmiş prototiptir.
+
+**Telefonda deneme (tarayıcının telefon görünümünde, yayındaki sürüm):**
+
+| Vaka | Sonuç |
+|---|---|
+| Klasik kalp krizi (62, erkek, baskı, kola yayılma, soğuk ter) | Acil, 112 |
+| Panik (28, kadın, stres, karıncalanma, ölüm korkusu) | Düşük risk + dışlanamaz uyarısı + nefes egzersizi |
+| Atipik kalp krizi (70, diyabetli, nefes darlığı, bulantı) | Acil, 112 |
+| Boş form | Gönderilmedi |
+
+## 9. Çalışma yöntemi
+
+Faz 3 ve 4'te mimariyi ve kontrolü bir yönetici yapay zeka ajanı (Claude Opus) yaptı; kodu iki ayrı alt ajan (Claude Sonnet) paralel yazdı. Yönetici ajan kodu inceledi, üç hatayı düzeltti (cevapsız sorular, varsayılan ağrı türü, model geçmişinin silinmesi), testleri kendisi çalıştırdı ve uygulamayı tarayıcıda denedi.
+
+## 10. Sıradaki adımlar
+
+1. Olasılık tablosunu (`src/synth.py`, `BIN`) bir doktora gösterip düzelttirmek.
 2. MIMIC-IV erişim başvurusu (günler sürebilir) ve gerçek veriyle doğrulama.
-3. Kendini geliştirme döngüsü: yeni veri gelince otomatik yeniden eğit → eskiyle karşılaştır → daha iyiyse güncelle.
-4. Modeli TFLite/ONNX'e çevirip soru formlu mobil prototip.
+3. Yeniden eğitimde tekrar eden vakaları ayıklamak; dondurulmuş test setini periyodik yenilemek (çok sayıda denemede modelin o test setine uyum sağlamaması için).
+4. Gerçek telefonlarda deneme ve kullanılabilirlik testi; yaşlılarda aşırı alarm (%24 özgüllük) sorununu doktorla değerlendirmek.
 5. Hukuk: KVKK, tıbbi cihaz mevzuatı. Gelir yönü: tanısız triyaj/panik desteği, ardından klinik B2B.
 
-## 8. Yeniden üretme
+## 11. Yeniden üretme
 
 ```
 python -m venv .venv && .venv\Scripts\pip install -r requirements.txt
-python src/train.py          # Cleveland modeli (data/uci_heart gerekir)
-python src/synth.py          # sentetik veri
-python src/train_symptoms.py # semptom modeli
+python src/train.py                  # Cleveland modeli (data/uci_heart gerekir)
+python src/synth.py                  # sentetik veri
+python src/train_symptoms.py         # semptom modeli, donmuş test seti, kayıt defteri (tekrar için --reset)
+python src/synth.py --seed 1 --n 1000 --out data/new_cases_demo.csv
+python src/retrain.py data/new_cases_demo.csv   # kendini geliştirme demosu
+python src/export_model.py           # modeli app/model.json'a aktar
+python -m pytest                     # Python testleri
+node tests/test_app_parity.mjs       # telefon-Python parite testi
 ```
