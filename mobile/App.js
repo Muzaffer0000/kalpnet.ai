@@ -183,7 +183,7 @@ export default function App() {
               )}
               <Call />
             </View>
-            {!urgent && <Breathing key={resultKey} />}
+            {!urgent && <Breathing key={`b${resultKey}`} />}
           </>
         )}
       </ScrollView>
