@@ -1,33 +1,29 @@
-"""Semptom modeli: kardiyak (acil) mı değil mi. Eşik, test setine bakmadan %98 duyarlılığa göre seçilir."""
+"""Semptom modeli: kardiyak (acil) mı değil mi. Eşik, test setine bakmadan %98 duyarlılığa göre seçilir.
+Ayrıca DONMUŞ test setini (data/test_frozen.csv) ve eğitim havuzunu (data/train_pool.csv) üretir."""
+import json
+import sys
+from datetime import datetime
+from pathlib import Path
+
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.compose import make_column_transformer
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import confusion_matrix, roc_auc_score
-from sklearn.model_selection import StratifiedKFold, cross_val_predict, train_test_split
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.model_selection import train_test_split
 
-TARGET_SENS = 0.98
+import model_lib
+
+# kayıt defteri, havuz ve donmuş test sıfırlanır: retrain geçmişi silinmesin diye açık onay iste
+if Path("models/registry.json").exists() and "--reset" not in sys.argv:
+    sys.exit("models/registry.json zaten var. Her şeyi sıfırlamak için: python src/train_symptoms.py --reset")
+
 df = pd.read_csv("data/synthetic_chestpain.csv")
-y = df.urgent_cardiac
-X = df.drop(columns=["condition", "urgent_cardiac", "atypical"])
-Xtr, Xte, ytr, yte, dtr, dte = train_test_split(X, y, df, test_size=0.3, stratify=y, random_state=0)
+dtr, dte = train_test_split(df, test_size=0.3, stratify=df.urgent_cardiac, random_state=0)
+dtr.to_csv("data/train_pool.csv", index=False)
+dte.to_csv("data/test_frozen.csv", index=False)
 
-model = make_pipeline(
-    make_column_transformer((OneHotEncoder(), ["pain_type"]),
-                            (StandardScaler(), ["age", "duration_min"]),
-                            remainder="passthrough"),
-    LogisticRegression(max_iter=2000, class_weight="balanced"))
-
-# eşik: sadece eğitim verisinin çapraz doğrulama tahminlerinden
-p_cv = cross_val_predict(model, Xtr, ytr, cv=StratifiedKFold(5, shuffle=True, random_state=0),
-                         method="predict_proba")[:, 1]
-thr = np.quantile(p_cv[ytr == 1], 1 - TARGET_SENS)
-model.fit(Xtr, ytr)
-p = model.predict_proba(Xte)[:, 1]
-assert 0 < thr < 1
+model, thr = model_lib.train(dtr)
+yte = dte.urgent_cardiac
+p = model.predict_proba(model_lib.features(dte))[:, 1]
 
 def line(name, mask):
     t = yte[mask]; pred = p[mask] >= thr
@@ -35,7 +31,8 @@ def line(name, mask):
     tn = int((~pred & (t == 0)).sum()); fp = int((pred & (t == 0)).sum())
     print(f"{name:<22} n={len(t):<5} duyarlılık {tp/max(tp+fn,1):.3f}  özgüllük {tn/max(tn+fp,1):.3f}  kaçırılan {fn}")
 
-print(f"test AUC {roc_auc_score(yte, p):.3f}, eşik {thr:.3f}")
+m = model_lib.evaluate(model, thr, dte)
+print(f"test AUC {m['auc']:.3f}, eşik {thr:.3f}")
 line("tüm test", np.ones(len(yte), bool))
 line("atipik kalp krizi", (dte.atypical == 1).values)  # hepsi kardiyak: özgüllük anlamsız
 line("kadın", (dte.male == 0).values)
@@ -47,3 +44,7 @@ for i in np.argsort(-np.abs(coef))[:8]:
     print(f"  {names[i].split('__')[-1]:<28} {coef[i]:+.2f}")
 
 joblib.dump({"model": model, "threshold": thr}, "models/symptom_model.joblib")
+entry = {"version": 1, "created": datetime.now().isoformat(timespec="seconds"),
+         "train_rows": len(dtr), "metrics": m, "status": "active"}
+json.dump([entry], open("models/registry.json", "w"), indent=2)
+print("kayıt: models/registry.json (v1 aktif)")

@@ -78,10 +78,16 @@ def generate(n=N, seed=SEED):
 
 
 if __name__ == "__main__":
-    df = generate()
-    assert len(df) == N and not df.isna().any().any()
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--n", type=int, default=N)
+    ap.add_argument("--seed", type=int, default=SEED)
+    ap.add_argument("--out", default="data/synthetic_chestpain.csv")
+    a = ap.parse_args()
+    df = generate(a.n, a.seed)
+    assert len(df) == a.n and not df.isna().any().any()
     share = df.condition.value_counts(normalize=True)
     assert abs(share["cardiac"] - PRIORS[0]) < .03
-    df.to_csv("data/synthetic_chestpain.csv", index=False)
+    df.to_csv(a.out, index=False)
     print(df.condition.value_counts().to_string())
     print(f"atipik kardiyak: {int(df.atypical.sum())} / {int(df.urgent_cardiac.sum())}")

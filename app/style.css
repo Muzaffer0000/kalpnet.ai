@@ -1,0 +1,28 @@
+:root{--bg:#fff;--fg:#1a1a1a;--mut:#555;--card:#f4f4f6;--bd:#8a8a94;--red:#b00020;--blue:#0b57d0;--ok:#0b5d3b}
+@media(prefers-color-scheme:dark){:root{--bg:#121214;--fg:#f2f2f2;--mut:#b5b5bd;--card:#1e1e22;--bd:#8a8a94;--red:#ff6b81;--blue:#8ab4f8;--ok:#7bd8a8}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:18px/1.45 system-ui,sans-serif}
+main{max-width:640px;margin:0 auto;padding:16px}
+h1{font-size:1.4rem;margin:.2em 0}h2{font-size:1.15rem;margin:0 0 .5em}
+.card{background:var(--card);border-radius:12px;padding:14px;margin:14px 0}
+.alert{border:3px solid var(--red)}
+.alert h2{color:var(--red)}
+.btn{display:block;width:100%;min-height:52px;padding:12px;border:0;border-radius:10px;font:inherit;font-weight:700;text-align:center;text-decoration:none;cursor:pointer;background:var(--blue);color:#fff}
+.btn.red{background:#b00020;color:#fff}
+.btn.sec{background:transparent;color:var(--blue);border:2px solid var(--blue)}
+label,legend{display:block;font-weight:600;margin:.6em 0 .25em}
+input[type=number],select{width:100%;min-height:48px;font:inherit;padding:8px;border:2px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--fg)}
+fieldset{border:0;padding:0;margin:0}
+.yn{display:flex;gap:8px}
+.yn label{flex:1;margin:0;font-weight:500}
+.yn input{position:absolute;opacity:0}
+.yn span{display:flex;align-items:center;justify-content:center;min-height:48px;border:2px solid var(--bd);border-radius:8px;cursor:pointer}
+.yn input:checked+span{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:700}
+.yn input:focus-visible+span,.btn:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--fg);outline-offset:2px}
+.q{padding:8px 0;border-bottom:1px solid var(--bd)}
+.err{color:var(--red);font-weight:700}
+.small{font-size:.85rem;color:var(--mut)}
+#circle{width:120px;height:120px;border-radius:50%;background:var(--blue);margin:16px auto;transition:transform 4s linear;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700}
+footer{position:sticky;bottom:0;background:var(--bg);border-top:2px solid var(--red);padding:8px 16px;font-size:.8rem;color:var(--fg)}
+[hidden]{display:none!important}
+@media(prefers-reduced-motion:reduce){#circle{transition:none}}

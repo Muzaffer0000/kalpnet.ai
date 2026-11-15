@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#b00020">
+<title>Göğüs Ağrısı Ön Değerlendirme</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <h1>Göğüs Ağrısı Ön Değerlendirme</h1>
+
+  <section class="card alert" aria-labelledby="red-h">
+    <h2 id="red-h">Önce bunu okuyun: acil belirtiler</h2>
+    <p>Aşağıdakilerden biri varsa <strong>formu doldurmayın, hemen 112'yi arayın</strong>:</p>
+    <ul>
+      <li>Göğsünüzü ezen/sıkıştıran bir ağrı ve 15 dakikadan uzun sürüyor</li>
+      <li>Ağrı kola, çeneye veya sırta yayılıyor</li>
+      <li>Soğuk terleme, bayılma ya da bayılacak gibi olma</li>
+      <li>Şiddetli nefes darlığı</li>
+    </ul>
+    <a class="btn red" href="tel:112">112'yi ara</a>
+  </section>
+
+  <form id="form" class="card" novalidate>
+    <h2>Sorular</h2>
+    <div id="fields"></div>
+    <p id="error" class="err" role="alert" hidden></p>
+    <button class="btn" type="submit">Değerlendir</button>
+  </form>
+
+  <section id="result" class="card" aria-live="polite" tabindex="-1" hidden></section>
+
+  <section id="breath" class="card" hidden>
+    <h2>Nefes egzersizi (4-4-6)</h2>
+    <p class="small">Burnunuzdan 4 sn nefes alın, 4 sn tutun, 6 sn ağzınızdan verin. Bu, panik hissini yatıştırmaya yardım edebilir; belirtileriniz sürerse acile gidin.</p>
+    <div id="circle" aria-hidden="true">Hazır</div>
+    <p id="phase" class="small" role="status" aria-live="polite"></p>
+    <button id="breath-btn" class="btn sec" type="button">Başlat</button>
+  </section>
+</main>
+<footer>Tıbbi cihaz değildir, tanı koymaz. Sentetik veriyle eğitilmiş bir prototiptir. Verileriniz cihazınızdan çıkmaz.</footer>
+<script type="module" src="app.js"></script>
+</body>
+</html>
