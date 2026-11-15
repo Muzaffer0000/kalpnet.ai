@@ -13,7 +13,8 @@ PRIORS = [0.15, 0.35, 0.25, 0.25]
 
 AGE = {"cardiac": (62, 12), "panic": (34, 10), "reflux": (45, 13), "msk": (42, 14)}
 MALE = {"cardiac": .60, "panic": .35, "reflux": .50, "msk": .50}
-DUR_MEDIAN_SD = {"cardiac": (25, .8), "panic": (12, .6), "reflux": (90, .9), "msk": (240, 1.0)}
+# süreler bilerek çakışır: kalp krizi dakikalardan saatlere uzanır, uzun ağrı onu dışlamaz
+DUR_MEDIAN_SD = {"cardiac": (45, 1.0), "panic": (15, .8), "reflux": (60, 1.0), "msk": (90, 1.2)}
 PAIN = {  # pressure, sharp, burning, ache, other
     "cardiac": [.60, .10, .10, .15, .05], "panic": [.20, .40, .05, .10, .25],
     "reflux": [.10, .10, .65, .10, .05], "msk": [.05, .45, .02, .40, .08]}
