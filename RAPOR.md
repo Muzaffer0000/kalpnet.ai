@@ -9,6 +9,7 @@
 | 2. Model | Bitti |
 | 3. Kendini geliştirme döngüsü | Bitti |
 | 4. Mobil uygulama (PWA) | Bitti, yayında |
+| 4b. React Native (Expo) uygulaması | Bitti, gerçek telefonda test edildi |
 | 5. Güvenlik ve hukuk | Başlanmadı |
 
 ## 1. Amaç ve neden
@@ -120,9 +121,23 @@ v2 daha az yanlış alarm veriyordu ama 3 kalp krizini daha kaçırdığı için
 | Atipik kalp krizi (70, diyabetli, nefes darlığı, bulantı) | Acil, 112 |
 | Boş form | Gönderilmedi |
 
+## 8b. React Native (Expo) mobil uygulaması
+
+**Ne:** Aynı uygulamanın gerçek mobil sürümü (`mobile/`), Android ve iOS için. Geliştirme aşamasında Expo Go ile QR koddan açılıyor; mağaza için APK/IPA derlenebilir.
+
+**Nasıl:**
+- Expo SDK 58, React Native 0.88, sade JavaScript, tek ekran, ekstra kütüphane yok.
+- Model yeniden yazılmadı: `app/score.js` ve `app/model.json` bayt bayt kopyalanıyor (`npm run sync-model`). `tests/test_mobile_parity.mjs` kopyaların özdeş olduğunu ve 200 vakada Python ile pariteyi doğruluyor.
+- `mobile/src/validate.js` PWA'daki giriş kontrollerinin aynısı; 8 birim testi var (cevapsız soru, ağrı türü, yaş/süre sınırları, karar eşitliği).
+- Tüm güvenlik kuralları PWA ile aynı. Ekran okuyucu desteği eklendi.
+
+**Doğrulama:** `expo-doctor` 20/20, Android ve iOS paketleri derlendi. Gerçek telefonda Expo Go ile açıldı; boş form engeli, 112 butonu, panik senaryosu + nefes egzersizi ve yeniden gönderimde sonuca kaydırma denendi, çalışıyor. Telefonda görülen tek sorun (iki bileşene aynı React anahtarı verilmesi) düzeltildi.
+
 ## 9. Çalışma yöntemi
 
 Faz 3 ve 4'te mimariyi ve kontrolü bir yönetici yapay zeka ajanı (Claude Opus) yaptı; kodu iki ayrı alt ajan (Claude Sonnet) paralel yazdı. Yönetici ajan kodu inceledi, üç hatayı düzeltti (cevapsız sorular, varsayılan ağrı türü, model geçmişinin silinmesi), testleri kendisi çalıştırdı ve uygulamayı tarayıcıda denedi.
+
+React Native sürümünde üç kademe kullanıldı: yönetici (Claude Fable) mimari kararları ve kabul kriterlerini belirledi ve son doğrulamayı yaptı; müdür (Claude Opus) işi böldü, her dosyayı inceledi ve testleri koşturdu; iki çalışan (Claude Sonnet) kodu yazdı. Müdür incelemede dört hata yakaladı (sonuca kaydırma, hata mesajının gizlenmesi, iOS ekran okuyucu, şablonun eklediği gereksiz dosyalar). Gerçek telefon testinde çıkan bir hata ise ancak cihazda görüldü: otomatik kontroller cihaz testinin yerini tutmuyor.
 
 ## 10. Sıradaki adımlar
 
